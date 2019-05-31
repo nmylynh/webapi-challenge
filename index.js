@@ -12,3 +12,18 @@ I need this code, just don't know where, perhaps should make some middleware, do
 
 Go code!
 */
+
+const express = require("express");
+
+const actions = require("./routers/actions");
+const projects = require("./routers/projects")
+
+const configureMiddleware = require('./config/middleware.js');
+
+const server = express();
+configureMiddleware(server);
+
+server.use("/api/actions", actions);
+server.use("/api/projects", projects);
+
+server.listen(8000, () => console.log('running on port 8K'));
