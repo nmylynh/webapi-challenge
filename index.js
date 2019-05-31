@@ -12,3 +12,13 @@ I need this code, just don't know where, perhaps should make some middleware, do
 
 Go code!
 */
+
+const express = require("express");
+
+const configureMiddleware = require('./config/middleware.js');
+
+const server = express();
+
+configureMiddleware(server);
+
+server.listen(8000, () => console.log('running on port 8K'));
