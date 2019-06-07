@@ -39,5 +39,64 @@ const validateActionId = async (req, res, next) => {
     }
 }
 
+//endpoints
+
+router.get('/', async (req, res) => {
+    try {
+        const actions = await actionsDB.get();
+
+        res.status(200).json(actions);
+    } catch(err) {
+        res.status(500).json({success:false, err})
+    }
+});
+
+router.get('/:id', async (req, res) => {
+    try {
+        const {id} = req.params;
+        const action = await actionsDB.get(id);
+
+        res.status(200).json(action);
+    } catch(err) {
+        res.status(500).json({success:false, err})
+    }
+});
+
+router.post('/', validateActionBody, validateAPid, async (req, res) => {
+    try {
+        const newAction = await actionsDB.insert(req.body);
+
+        res.status(201).json(newAction);
+    } catch(err) {
+        res.status(500).json({success:false, err})
+    }
+});
+
+router.put('/:id', validateActionId, validateActionBody, validateAPid, async (req, res) => {
+    try {
+        const {id} = req.params;
+        const updateAction = await actionsDB.update(id, req.body);
+
+        updateAction 
+        ? res.status(200).json({message: "successfully updated action"}) 
+        : res.status(404).end();
+    } catch(err) {
+        res.status(500).json({success:false, err})
+    }
+});
+
+router.delete('/:id', validateActionId, async (req, res) => {
+    try {
+        const {id} = req.params;
+        const success = await actionsDB.remove(id);
+        
+        success ?
+         res.status(204).end() : res.status(404).end();
+    } catch(err) {
+        res.status(500).json({success:false, err})
+    }
+});
+
+
 
 module.exports = router;
