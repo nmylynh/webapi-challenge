@@ -27,7 +27,7 @@ const validateProjectId = async (req, res, next) => {
     ? next()
     : res.status(404).json({message: "invalid id"});  
     } catch(err) {
-        res.status(400).json({message: "missing user id"});
+        res.status(400).json({message: "missing project id"});
     }
 }
 
