@@ -1,9 +1,11 @@
 const express = require('express');
-const logger = (req, res, next) => {
-    console.log(`A ${req.method} request to '${req.url}' `);
-    next();
-}
+const helmet = require('helmet');
+const morgan = require('morgan');
+const cors = require('cors');
 
-module.exports = function(server) {
-    server.use(express.json(), logger());
+module.exports = server => {
+    server.use(express.json()); 
+    server.use(cors()); 
+    server.use(helmet()); 
+    server.use(morgan('tiny')); 
 }
