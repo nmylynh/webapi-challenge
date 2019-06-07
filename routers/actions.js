@@ -1,76 +1,43 @@
 const express = require("express");
-const actionsData = require("../data/helpers/actionModel")
-const projectData = require("../data/helpers/projectModel")
+const actionsDB = require("../data/helpers/actionModel")
+const projectsDB = require("../data/helpers/projectModel")
 const router = express.Router();
 
 
-router.get("/", (req, res) => {
-    actionsData
-        .get()
-        .then(actions =>{
-            res.status(200).json({actions});
-        })
-        .catch(() => {
-            res.status(500).json({ error: "Failure to get data from actions."});
-        });
-});
+//middleware
+const validateActionBody = (req, res, next) => {
+    const {project_id, description, notes} = req.body;
 
-router.get("/:id", (req, res) => {
+    project_id && description && notes
+    ? next()
+    : res.status(400).json({message: "missing required fields for actions"})
+} 
+
+const validateAPid = async (req, res, next) => {
+    try {
+    const {project_id} = req.body;
+    const action = await projectsDB.get(project_id);
+
+    action 
+    ? next()
+    : res.status(404).json({message: "invalid id"});  
+    } catch(err) {
+        res.status(400).json({message: "missing action id"});
+    }
+}
+
+const validateActionId = async (req, res, next) => {
+    try {
     const {id} = req.params;
-    actionsData
-        .get(id)
-        .then(action => {
-            res.status(200).json({action})
-        })
-        .catch(() => {
-            res.status(404).json({error: "Failure to get this action."});
-        });
-});
+    const action = await actionsDB.get(id);
 
-//id, description, notes
-router.post("/", (req, res) => {
-    if(req.body.project_id && req.body.description && req.body.notes) {
-        actionsData
-            .insert(req.body)
-            .then(response => {
-                res.status(201).json({response})
-            })
-            .catch(() => {
-                res.status(500).json({error: "Failure to post action."});
-            });
-    } else {
-        res.status(404).json({error: "Required parameters are missing."});
+    action 
+    ? next()
+    : res.status(404).json({message: "invalid id"});  
+    } catch(err) {
+        res.status(400).json({message: "missing action id"});
     }
-});
+}
 
-router.put("/:id", (req, res) => {
-    if(req.params.id && req.body.project_id && req.body.description && req.body.notes) {
-        actionsData
-            .update(req.params.id, req.body)
-            .then(action => {
-                res.status(200).json({action})
-            })
-            .catch(() => {
-                res.status(500).json({error: "Failure to update action."});
-            });
-    } else {
-        res.status(404).json({error: "Required parameters are missing."});
-    }
-});
-
-router.delete("/:id", (req, res) => {
-    if(req.params.id){
-        actionsData
-            .remove(req.params.id)
-            .then(response => {
-                res.status(200).json({response})
-            })
-            .catch(() => {
-                res.status(500).json({error: "Failure to delete action."})
-            })
-    } else {
-        res.status(404).json({error: "Required id is missing."});
-    }
-})
 
 module.exports = router;

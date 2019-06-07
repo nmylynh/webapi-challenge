@@ -8,7 +8,7 @@ const router = express.Router();
 const validateActionId = async (req, res, next) => {
     try {
     const {project_id} = req.body;
-    const action = await actionsDB.get(project_id);
+    const action = await projectsDB.get(project_id);
 
     action 
     ? next()
