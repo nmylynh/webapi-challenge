@@ -1,76 +1,134 @@
 const express = require("express");
-const actionsData = require("../data/helpers/actionModel")
-const projectsData = require("../data/helpers/projectModel")
+const actionsDB = require("../data/helpers/actionModel")
+const projectsDB = require("../data/helpers/projectModel")
 const router = express.Router();
 
+//middleware
 
-router.get("/", (req, res) => {
-    projectsData
-        .get()
-        .then(projects =>{
-            res.status(200).json({projects});
-        })
-        .catch(() => {
-            res.status(500).json({ error: "Failure to get data from projects."});
-        });
-});
+const validateActionId = async (req, res, next) => {
+    try {
+    const {project_id} = req.body;
+    const action = await projectsDB.get(project_id);
 
-router.get("/:id", (req, res) => {
+    action 
+    ? next()
+    : res.status(404).json({message: "invalid id"});  
+    } catch(err) {
+        res.status(400).json({message: "missing action id"});
+    }
+}
+
+const validateProjectId = async (req, res, next) => {
+    try {
     const {id} = req.params;
-    projectsData
-        .get(id)
-        .then(projects => {
-            res.status(200).json({projects})
-        })
-        .catch(() => {
-            res.status(404).json({error: "Failure to get this project."});
-        });
-});
+    const project = await projectsDB.get(id);
 
-//name, description
-router.post("/", (req, res) => {
-    if(req.body.name && req.body.description) {
-        projectsData
-            .insert(req.body)
-            .then(response => {
-                res.status(201).json({response})
-            })
-            .catch(() => {
-                res.status(500).json({error: "Failure to post action."});
-            });
-    } else {
-        res.status(404).json({error: "Required parameters are missing."});
+    project 
+    ? next()
+    : res.status(404).json({message: "invalid id"});  
+    } catch(err) {
+        res.status(400).json({message: "missing project id"});
+    }
+}
+
+const validateActionBody = (req, res, next) => {
+    const {project_id, description, notes} = req.body;
+
+    project_id && description && notes
+    ? next()
+    : res.status(400).json({message: "missing required fields for actions"})
+} 
+
+const validateProjectBody = (req, res, next) => {
+    const { name, description } = req.body;
+
+    name 
+    ? description
+    ? next()
+    : res.status(400).json({message: "missing description"})
+    : res.status(400).json({message: "missing name"});
+};
+
+//endpoints
+
+router.get('/', async (req, res) => {
+    try {
+        const projects = await projectsDB.get();
+
+        res.status(200).json(projects);
+    } catch(err) {
+        res.status(500).json({success: false, err});
     }
 });
 
-router.put("/:id", (req, res) => {
-    if(req.body.name && req.body.description) {
-        projectsData
-            .update(req.params.id, req.body)
-            .then(project => {
-                res.status(200).json({project})
-            })
-            .catch(() => {
-                res.status(500).json({error: "Failure to update action."});
-            });
-    } else {
-        res.status(404).json({error: "Required parameters are missing."});
+
+router.get('/:id', async (req, res) => {
+    try {
+        const {id} = req.params;
+        const project = await projectsDB.get(id);
+
+        res.status(200).json(project);
+    } catch(err) {
+        res.status(500).json({success: false, err});
+    }
+}); 
+
+router.get('/:id/actions', async (req, res) => {
+    try {
+        const {id} = req.params;
+        const project = await projectsDB.getProjectActions(id);
+
+        res.status(200).json(project);
+    } catch (err) {
+        res.status(500).json({success: false, err});
     }
 });
 
-router.delete("/:id", (req, res) => {
-    if(req.params.id){
-        projectsData
-            .remove(req.params.id)
-            .then(response => {
-                res.status(200).json({response})
-            })
-            .catch(() => {
-                res.status(500).json({error: "Failure to delete action."})
-            })
-    } else {
-        res.status(404).json({error: "Required id is missing."});
+router.post('/', validateProjectBody, async (req, res) => {
+    try {
+        const newProject = await projectsDB.insert(req.body);
+
+        res.status(201).json(newProject);
+    } catch(err) {
+        res.status(500).json({success: false, err});
     }
-})
+});
+
+router.post('/:id/actions', validateActionId, validateActionBody, async (req, res) => {
+    try {
+        const newAction = await actionsDB.insert(req.body);
+
+        res.status(201).json(newAction);
+    } catch(err) {
+        res.status(500).json({success: false, err});
+    }
+});
+
+router.put('/:id', validateProjectId, validateProjectBody, async (req, res) => {
+    try {
+        const {id} = req.params;
+        const updateProject = await projectsDB.update(id, req.body);
+
+        updateProject
+        ? res.status(200).json({message: "successfully updated project"})
+        : res.status(404).end()
+    } catch(err) {
+        res.status(500).json({success: false, err});
+    }
+});
+
+router.delete('/:id', validateProjectId, async (req, res) => {
+    try {
+        const {id} = req.params;
+        const success = await projectsDB.remove(id);
+
+        success ?
+         res.status(204).end() : res.status(404).end();
+    }  catch(err) {
+         res.status(500).json({success: false, err});
+    }
+});
+
+
 
 module.exports = router;
